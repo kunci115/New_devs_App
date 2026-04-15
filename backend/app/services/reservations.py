@@ -48,15 +48,44 @@ async def calculate_total_revenue(property_id: str, tenant_id: str) -> Dict[str,
                 # Use SQLAlchemy text for raw SQL
                 from sqlalchemy import text
                 
+                # query = text("""
+                #     SELECT 
+                #         property_id,
+                #         SUM(total_amount) as total_revenue,
+                #         COUNT(*) as reservation_count
+                #     FROM reservations 
+                #     WHERE property_id = :property_id AND tenant_id = :tenant_id
+                #     GROUP BY property_id
+                # """)
+
+                # query = text("""
+                #     SELECT 
+                #         property_id,
+                #         SUM(total_amount) as total_revenue,
+                #         COUNT(*) as reservation_count
+                #     FROM reservations 
+                #     WHERE property_id = :property_id 
+                #     AND tenant_id = :tenant_id
+                #     AND check_in_date >= :start_date
+                #     AND check_in_date < :end_date
+                #     GROUP BY property_id
+                # """)
+
+                
                 query = text("""
                     SELECT 
-                        property_id,
-                        SUM(total_amount) as total_revenue,
+                        r.property_id,
+                        SUM(r.total_amount) as total_revenue,
                         COUNT(*) as reservation_count
-                    FROM reservations 
-                    WHERE property_id = :property_id AND tenant_id = :tenant_id
-                    GROUP BY property_id
+                    FROM reservations r
+                    JOIN properties p ON p.id = r.property_id AND p.tenant_id = r.tenant_id
+                    WHERE r.property_id = :property_id 
+                    AND r.tenant_id = :tenant_id
+                    AND (r.check_in_date AT TIME ZONE p.timezone) >= :start_date
+                    AND (r.check_in_date AT TIME ZONE p.timezone) < :end_date
+                    GROUP BY r.property_id
                 """)
+
                 
                 result = await session.execute(query, {
                     "property_id": property_id, 

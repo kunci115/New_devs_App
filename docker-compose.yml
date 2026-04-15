@@ -14,8 +14,8 @@ services:
     depends_on:
       - db
       - redis
-    volumes:
-      - ./backend:/app
+    # volumes:
+    #   - ./backend:/app  # disabled: causes EAGAIN deadlock on macOS bind mounts
 
   frontend:
     build:
